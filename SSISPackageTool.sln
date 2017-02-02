@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConnectionManagerGuidReplace", "ConsoleApplication1\ConnectionManagerGuidReplace.csproj", "{C1C51C81-0B5D-48E3-AB92-32DAA97D1D71}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConnectionManagerGuidReplace", "ConnectionManagerGuidReplace\ConnectionManagerGuidReplace.csproj", "{C1C51C81-0B5D-48E3-AB92-32DAA97D1D71}"
 EndProject
 Project("{159641D6-6404-4A2A-AE62-294DE0FE8301}") = "GenerateEtlPackages", "GenerateEtlPackages\GenerateEtlPackages.dtproj", "{F79007D0-9B36-4D81-AC7F-4825EBA71CA1}"
 EndProject

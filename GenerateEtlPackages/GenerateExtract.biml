@@ -1,0 +1,54 @@
+<#@ template language="C#" hostspecific="true"#>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Data" #>
+<Biml xmlns="http://schemas.varigence.com/biml.xsd">
+      <Connections>
+            <OleDbConnection Name="WgkOvl_Omz" ConnectionString="Data Source=.\sqlexpress;Initial Catalog=WgkOvl_Omz;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;" CreateInProject="true"/>
+            <OleDbConnection Name="Staging" ConnectionString="Data Source=.\sqlexpress;Initial Catalog=Staging;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;" CreateInProject="true"/>
+      </Connections>
+      <Packages>
+            <# 
+                var metadataConnectionString = "Data Source=.\\sqlexpress;Initial Catalog=Staging;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;";
+                DataTable tables = ExternalDataAccess.GetDataTable(metadataConnectionString, 
+                    @"SELECT t.name 
+                    FROM sys.tables t 
+                        INNER JOIN sys.schemas s on t.schema_id = s.schema_id
+                    WHERE s.name = 'ins'");
+                foreach (DataRow row in tables.Rows)
+                { 
+                    DataTable columns = ExternalDataAccess.GetDataTable(metadataConnectionString, 
+                        @"SELECT c.name FROM sys.columns c WHERE object_id = OBJECT_ID('ins."+((string)row[0])+"')");
+                    var prefix = ((string)row[0]).ToLower() [0];
+                    var komma = " ";
+                #>
+            <Package Name="Extract.ReferenceData.<#=row[0]#>" ConstraintMode="Linear" AutoCreateConfigurationsType="None">
+                  <Tasks>
+                        <Dataflow Name="Copy Data <#=row[0]#>"> 
+                              <Transformations>
+                                    <OleDbSource Name="WgkOvl_Omz In" ConnectionName="WgkOvl_Omz">
+                                          <DirectInput>SELECT 
+<#
+foreach(DataRow col in columns.Rows)
+  {
+    if(string.Equals(col[0],"RowUId")){
+        continue; // Ignore RowUId
+    }
+    #> <#=komma#> <#=prefix#>.[<#=col[0]#>]
+<#
+    komma = ",";
+  }
+#>FROM dbo.[<#=row[0]#>] <#=prefix#></DirectInput>
+                                    </OleDbSource>
+                                    <OleDbDestination Name="Staging outs" 
+                                        ConnectionName="Staging"
+                                        TableLock="false"
+                                        UseFastLoadIfAvailable="true">
+                                <ExternalTableOutput Table="outs.[<#=row[0]#>]"/>
+                                    </OleDbDestination>
+                              </Transformations>
+                        </Dataflow>
+                  </Tasks>
+            </Package>
+                <# } #>
+      </Packages>
+</Biml>
