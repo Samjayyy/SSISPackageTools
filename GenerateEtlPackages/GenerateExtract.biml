@@ -1,31 +1,59 @@
 <#@ template language="C#" hostspecific="true"#>
 <#@ import namespace="System" #>
 <#@ import namespace="System.Data" #>
+<#
+    const string SrcCon = @"Data Source=.\sqlexpress;Initial Catalog=WgkOvl_Omz;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;";
+    const string SrcConName = "WgkOvl_Omz";
+    const string DestCon = @"Data Source=.\sqlexpress;Initial Catalog=Staging;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;";
+    const string DestConName = "Staging";
+#>
 <Biml xmlns="http://schemas.varigence.com/biml.xsd">
       <Connections>
-            <OleDbConnection Name="WgkOvl_Omz" ConnectionString="Data Source=.\sqlexpress;Initial Catalog=WgkOvl_Omz;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;" CreateInProject="true"/>
-            <OleDbConnection Name="Staging" ConnectionString="Data Source=.\sqlexpress;Initial Catalog=Staging;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;" CreateInProject="true"/>
+            <OleDbConnection Name="<#=SrcConName#>" ConnectionString="<#=SrcCon#>" CreateInProject="true"/>
+            <OleDbConnection Name="<#=DestConName#>" ConnectionString="<#=DestCon#>" CreateInProject="true"/>
       </Connections>
       <Packages>
             <# 
-                var metadataConnectionString = "Data Source=.\\sqlexpress;Initial Catalog=Staging;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;";
-                DataTable tables = ExternalDataAccess.GetDataTable(metadataConnectionString, 
-                    @"SELECT t.name 
+                const string queryAllTables = @"
+                    SELECT t.name 
                     FROM sys.tables t 
                         INNER JOIN sys.schemas s on t.schema_id = s.schema_id
-                    WHERE s.name = 'ins'");
+                    WHERE s.name = 'ins'
+                        AND t.name IN ('BezoekAfdAdm','Verstrekking')
+                ";
+                const string queryAllIsVerwijderdTables = @"
+                    SELECT DISTINCT t.name
+                    FROM sys.columns c
+                    	INNER JOIN sys.tables t ON c.object_id = t.object_id
+                        INNER JOIN sys.schemas s on t.schema_id = s.schema_id
+                    WHERE s.name = 'dbo'
+                        AND c.name = 'IsVerwijderd'
+                ";
+                DataTable isDelTables = ExternalDataAccess.GetDataTable(SrcCon, queryAllIsVerwijderdTables);
+                var delTableSet = new HashSet<string>();
+                foreach (DataRow row in isDelTables.Rows)
+                {
+                    delTableSet.Add((string)row[0]);
+                }
+                DataTable tables = ExternalDataAccess.GetDataTable(DestCon, queryAllTables);
                 foreach (DataRow row in tables.Rows)
                 { 
-                    DataTable columns = ExternalDataAccess.GetDataTable(metadataConnectionString, 
+                    DataTable columns = ExternalDataAccess.GetDataTable(DestCon, 
                         @"SELECT c.name FROM sys.columns c WHERE object_id = OBJECT_ID('ins."+((string)row[0])+"')");
                     var prefix = ((string)row[0]).ToLower() [0];
                     var komma = " ";
+                    var addWhere = "";
+                    if(delTableSet.Contains((string)row[0]))
+                    {
+                        addWhere = @"
+WHERE "+prefix+@".IsVerwijderd = 0";
+                    }
                 #>
             <Package Name="Extract.ReferenceData.<#=row[0]#>" ConstraintMode="Linear" AutoCreateConfigurationsType="None">
                   <Tasks>
                         <Dataflow Name="Copy Data <#=row[0]#>"> 
                               <Transformations>
-                                    <OleDbSource Name="WgkOvl_Omz In" ConnectionName="WgkOvl_Omz">
+                                    <OleDbSource Name="<#=SrcConName#> In" ConnectionName="<#=SrcConName#>">
                                           <DirectInput>SELECT 
 <#
 foreach(DataRow col in columns.Rows)
@@ -37,10 +65,10 @@ foreach(DataRow col in columns.Rows)
 <#
     komma = ",";
   }
-#>FROM dbo.[<#=row[0]#>] <#=prefix#></DirectInput>
+#>FROM dbo.[<#=row[0]#>] <#=prefix#><#=addWhere#></DirectInput>
                                     </OleDbSource>
-                                    <OleDbDestination Name="Staging outs" 
-                                        ConnectionName="Staging"
+                                    <OleDbDestination Name="<#=DestConName#> Out" 
+                                        ConnectionName="<#=DestConName#>"
                                         TableLock="false"
                                         UseFastLoadIfAvailable="true">
                                 <ExternalTableOutput Table="outs.[<#=row[0]#>]"/>
