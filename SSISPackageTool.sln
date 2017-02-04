@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConnectionManagerGuidReplac
 EndProject
 Project("{159641D6-6404-4A2A-AE62-294DE0FE8301}") = "GenerateEtlPackages", "GenerateEtlPackages\GenerateEtlPackages.dtproj", "{F79007D0-9B36-4D81-AC7F-4825EBA71CA1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateDbUpEverytimeScripts", "CreateDbUpEverytimeScripts\CreateDbUpEverytimeScripts.csproj", "{45019CBB-8D08-4571-BDE8-421DDC4FE568}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,12 @@ Global
 		{F79007D0-9B36-4D81-AC7F-4825EBA71CA1}.Development|Any CPU.Build.0 = Development
 		{F79007D0-9B36-4D81-AC7F-4825EBA71CA1}.Release|Any CPU.ActiveCfg = Development
 		{F79007D0-9B36-4D81-AC7F-4825EBA71CA1}.Release|Any CPU.Build.0 = Development
+		{45019CBB-8D08-4571-BDE8-421DDC4FE568}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45019CBB-8D08-4571-BDE8-421DDC4FE568}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45019CBB-8D08-4571-BDE8-421DDC4FE568}.Development|Any CPU.ActiveCfg = Debug|Any CPU
+		{45019CBB-8D08-4571-BDE8-421DDC4FE568}.Development|Any CPU.Build.0 = Debug|Any CPU
+		{45019CBB-8D08-4571-BDE8-421DDC4FE568}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45019CBB-8D08-4571-BDE8-421DDC4FE568}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
