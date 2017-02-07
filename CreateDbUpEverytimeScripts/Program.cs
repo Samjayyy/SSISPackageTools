@@ -9,35 +9,25 @@ namespace CreateDbUpEverytimeScripts
     /// </summary>
     class Program
     {
-        //const string PathToTableExtract = @"C:\Users\evdtadmin\Source\Repos\SSISPackageTools\CreateDbUpEverytimeScripts\omzTables_filtered.sql";
-        static string PathToTableExtract = @"C:\Users\evdtadmin\Source\Repos\SSISPackageTools\CreateDbUpEverytimeScripts\Script001 - Create Schema.sql";
-        //static string PathToOutputTables = @"C:\Users\Sam Segers\Documents\evdt\final\etl\generate\Staging\";
-        static string PathToOutputTables = @"C:\Users\evdtadmin\Documents\Schemas";
-        //C:\Users\evdtadmin\Documents\Schemas
+        private static string PathToTableExtract = @"C:\Users\Sam Segers\Documents\evdt\final\etl\generate\omzTables_filtered.sql";
+        private static string PathToOutputTables = @"C:\Users\Sam Segers\Documents\evdt\final\etl\generate\Staging\";
+        //static string PathToTableExtract = @"C:\Users\evdtadmin\Source\Repos\SSISPackageTools\CreateDbUpEverytimeScripts\Script001 - Create Schema.sql";
+        //static string PathToOutputTables = @"C:\Users\evdtadmin\Documents\Schemas";
 
         static void Main(string[] args)
         {
-            if (args.Length > 1)
-            {
-                PathToTableExtract = args[0];
-                PathToOutputTables = args[1];
-            }
+            ParseArgs(args);
             var tables = GetRawTables();
             Console.WriteLine($"Found {tables.Count} tables.");
-            Console.WriteLine($"Do you want to generate tables for staging (Y,N)?");
-            var isStaging = (Console.ReadKey().Key == ConsoleKey.Y);
-            Console.WriteLine($"Want to write all created tables to path {PathToOutputTables} (Y,N)?");
-            var writeToFile = (Console.ReadKey().Key == ConsoleKey.Y);
-            //Console.WriteLine("Raw Example: ");
-            //Console.WriteLine($"{tables[0]}");
+            var tableParser = CreateTableParser();
+            var writeToFile = Confirm($"Want to write all created tables to path {PathToOutputTables}");
             var number = 1;
             foreach (var raw in tables)
             {
                 // Parse to objects
-                var table = SqlTokens.ParseTable(raw, isStaging);
+                var table = tableParser(raw);
                 // Remove columns that we are not going to use
-                table.RemoveColumns();
-                table.SetPrimaryKey();
+                table.AdjustColumns();
                 if (writeToFile)
                 {
                     // Write to file
@@ -56,6 +46,56 @@ namespace CreateDbUpEverytimeScripts
             Console.WriteLine();
             Console.WriteLine("Press any key to exit..");
             Console.ReadKey();
+        }
+
+        static void ParseArgs(string[] args)
+        {
+            if (args.Length == 2)
+            {
+                if (!Directory.Exists(args[0]))
+                {
+                    Console.WriteLine($"{args[0]} is not a valid path and will be ignore");
+                    return;
+                }
+                if (!Directory.Exists(args[1]))
+                {
+                    Console.WriteLine($"{args[1]} is not a valid path and will be ignore");
+                    return;
+                }
+                PathToTableExtract = args[0];
+                PathToOutputTables = args[1];
+            }
+
+        }
+
+        static Func<string, Table> CreateTableParser()
+        {
+            if (Confirm($"Do you want to generate tables for {nameof(StagingTable)}"))
+            {
+                return ((raw) => SqlTokens.ParseTable<StagingTable>(raw));
+            }
+            if (Confirm($"Do you want to generate tables for {nameof(TransformedTable)}"))
+            {
+                return ((raw) => SqlTokens.ParseTable<TransformedTable>(raw));
+            }
+            Console.WriteLine("No other tables are currently supported");
+            return CreateTableParser();
+        }
+
+        static bool Confirm(string question)
+        {
+            Console.WriteLine($"{question} (Y,N)");
+            switch (Console.ReadKey().Key)
+            {
+                case ConsoleKey.Y:
+                    Console.WriteLine("es");
+                    return true;
+                case ConsoleKey.N:
+                    Console.WriteLine("o");
+                    return false;
+            }
+            Console.WriteLine("Please enter yes or no..");
+            return Confirm(question);
         }
 
         static IList<string> GetRawTables()

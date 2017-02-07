@@ -16,7 +16,7 @@ namespace CreateDbUpEverytimeScripts
         public const string StmntIdentity = "IDENTITY(";
         public const string StmntAs = " AS "; // e.g. used in computed columns
 
-        public static Table ParseTable(string stmnt, bool isStaging)
+        public static T ParseTable<T>(string stmnt) where T : Table, new()
         {
             stmnt = Clean(stmnt);
             var m = Regex.Match(stmnt, PatternCreateTable, RegexOptions.Singleline);
@@ -26,21 +26,10 @@ namespace CreateDbUpEverytimeScripts
             }
             // var schemaName = m.Groups[3].ToString(); // Just in case this would be useful too
             var tableName = m.Groups[3].ToString();
-            Table table;
-            if (isStaging)
+            var table = new T
             {
-                table = new StagingTable
-                {
-                    Name = tableName
-                };
-            }
-            else
-            {
-                table = new TransformedTable
-                {
-                    Name = tableName
-                };
-            }
+                Name = tableName,
+            };
 
             stmnt = stmnt.Substring(stmnt.IndexOf('(')); // remove create table statement
             stmnt = RemoveConstraint(stmnt);
@@ -60,10 +49,7 @@ namespace CreateDbUpEverytimeScripts
                     DataType = props[1],
                 };
                 column.IsNullable = !CheckStatement(col, StmntNotNull);
-                if (isStaging)
-                {
-                    column.IsIdentity = CheckStatement(col, StmntIdentity);
-                }
+                column.IsIdentity = CheckStatement(col, StmntIdentity);
                 table.Columns.Add(column);
             }
             return table;

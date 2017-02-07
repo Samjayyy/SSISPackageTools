@@ -20,12 +20,12 @@ namespace CreateDbUpEverytimeScripts
             }
         }
 
-        public override void SetPrimaryKey()
+        protected override void SetPrimaryKey()
         {
             IdentityColumn.IsPrimaryKey = true;
         }
 
-        public override void RemoveColumns()
+        protected override void RemoveColumns()
         {
             base.RemoveColumns();
             Columns.Where(c => c.Name.StartsWith("Extern"))
