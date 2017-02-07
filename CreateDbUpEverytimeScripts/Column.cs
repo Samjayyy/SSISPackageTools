@@ -8,7 +8,7 @@ namespace CreateDbUpEverytimeScripts
         public string DataType { get; set; }
         public bool IsNullable { get; set; }
         public bool IsIdentity { get; set; }
-
+        public bool IsPrimaryKey { get; set; }
         public override string ToString()
         {
             return $"[{Name}] [{DataType}] {(IsIdentity?"IDENTITY(1,1) ":string.Empty)}{(IsNullable?"NULL":"NOT NULL")}";

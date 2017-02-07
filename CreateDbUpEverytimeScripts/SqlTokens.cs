@@ -16,20 +16,32 @@ namespace CreateDbUpEverytimeScripts
         public const string StmntIdentity = "IDENTITY(";
         public const string StmntAs = " AS "; // e.g. used in computed columns
 
-        public static Table ParseTable(string stmnt)
+        public static Table ParseTable(string stmnt, bool isStaging)
         {
             stmnt = Clean(stmnt);
             var m = Regex.Match(stmnt, PatternCreateTable, RegexOptions.Singleline);
             if (!m.Success)
             {
-                throw new ArgumentException($"The given statement expected to start with {StmntCreateTable}",nameof(stmnt));
+                throw new ArgumentException($"The given statement expected to start with {StmntCreateTable}", nameof(stmnt));
             }
             // var schemaName = m.Groups[3].ToString(); // Just in case this would be useful too
             var tableName = m.Groups[3].ToString();
-            var table = new Table
+            Table table;
+            if (isStaging)
             {
-                Name = tableName,
-            };
+                table = new StagingTable
+                {
+                    Name = tableName
+                };
+            }
+            else
+            {
+                table = new TransformedTable
+                {
+                    Name = tableName
+                };
+            }
+
             stmnt = stmnt.Substring(stmnt.IndexOf('(')); // remove create table statement
             stmnt = RemoveConstraint(stmnt);
             stmnt = stmnt.Trim(new char[] { ' ', '(', ')', ',' }); // final trimming irrelevant characters
@@ -38,7 +50,7 @@ namespace CreateDbUpEverytimeScripts
             foreach (var col in stmnt.Split(','))
             {
                 var props = col.Trim().Split(' '); // assuming that there are no spaces in column names (would be so bad)
-                if(props.Length < 2)
+                if (props.Length < 2)
                 {
                     throw new InvalidOperationException($"Was not able to correctly split statement {stmnt}");
                 }
@@ -47,8 +59,11 @@ namespace CreateDbUpEverytimeScripts
                     Name = props[0],
                     DataType = props[1],
                 };
-                column.IsNullable = !CheckStatement(col,StmntNotNull);
-                column.IsIdentity = CheckStatement(col, StmntIdentity);
+                column.IsNullable = !CheckStatement(col, StmntNotNull);
+                if (isStaging)
+                {
+                    column.IsIdentity = CheckStatement(col, StmntIdentity);
+                }
                 table.Columns.Add(column);
             }
             return table;
@@ -62,7 +77,7 @@ namespace CreateDbUpEverytimeScripts
         private static string Clean(string stmnt)
         {
             // not planning to use braces anymore
-            stmnt = stmnt.Replace("[", string.Empty); 
+            stmnt = stmnt.Replace("[", string.Empty);
             stmnt = stmnt.Replace("]", string.Empty);
             // everything on 1 line
             stmnt = stmnt.Replace(Environment.NewLine, " ");
@@ -74,10 +89,10 @@ namespace CreateDbUpEverytimeScripts
         private static string RemoveConstraint(string stmnt)
         {
             var ixOf = stmnt.IndexOf(StmntConstraint);
-            if(ixOf == -1)
+            if (ixOf == -1)
             {
                 ixOf = stmnt.IndexOf(StmntPrimaryKey);
-                if(ixOf == -1)
+                if (ixOf == -1)
                 {
                     return stmnt;
                 }

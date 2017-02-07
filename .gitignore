@@ -240,3 +240,5 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+/CreateDbUpEverytimeScripts/Script001 - Create Schema.sql
+/CreateDbUpEverytimeScripts/omzTables_filtered.sql

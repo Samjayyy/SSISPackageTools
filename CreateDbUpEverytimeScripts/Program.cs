@@ -9,13 +9,23 @@ namespace CreateDbUpEverytimeScripts
     /// </summary>
     class Program
     {
-        const string PathToTableExtract = @"C:\Users\Sam Segers\Documents\evdt\final\etl\generate\omzTables.sql";
-        const string PathToOutputTables = @"C:\Users\Sam Segers\Documents\evdt\final\etl\generate\Staging\";
+        //const string PathToTableExtract = @"C:\Users\evdtadmin\Source\Repos\SSISPackageTools\CreateDbUpEverytimeScripts\omzTables_filtered.sql";
+        static string PathToTableExtract = @"C:\Users\evdtadmin\Source\Repos\SSISPackageTools\CreateDbUpEverytimeScripts\Script001 - Create Schema.sql";
+        //static string PathToOutputTables = @"C:\Users\Sam Segers\Documents\evdt\final\etl\generate\Staging\";
+        static string PathToOutputTables = @"C:\Users\evdtadmin\Documents\Schemas";
+        //C:\Users\evdtadmin\Documents\Schemas
 
         static void Main(string[] args)
         {
+            if (args.Length > 1)
+            {
+                PathToTableExtract = args[0];
+                PathToOutputTables = args[1];
+            }
             var tables = GetRawTables();
             Console.WriteLine($"Found {tables.Count} tables.");
+            Console.WriteLine($"Do you want to generate tables for staging (Y,N)?");
+            var isStaging = (Console.ReadKey().Key == ConsoleKey.Y);
             Console.WriteLine($"Want to write all created tables to path {PathToOutputTables} (Y,N)?");
             var writeToFile = (Console.ReadKey().Key == ConsoleKey.Y);
             //Console.WriteLine("Raw Example: ");
@@ -24,9 +34,10 @@ namespace CreateDbUpEverytimeScripts
             foreach (var raw in tables)
             {
                 // Parse to objects
-                var table = SqlTokens.ParseTable(raw);
+                var table = SqlTokens.ParseTable(raw, isStaging);
                 // Remove columns that we are not going to use
-                table.RemoveColumns("LaatsteWijzigingOp", "LaatsteWijzigingDoor", "CreatieOp", "CreatieDoor", "IsVerwijderd");
+                table.RemoveColumns();
+                table.SetPrimaryKey();
                 if (writeToFile)
                 {
                     // Write to file
