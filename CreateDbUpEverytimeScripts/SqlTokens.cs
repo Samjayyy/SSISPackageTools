@@ -6,9 +6,9 @@ namespace CreateDbUpEverytimeScripts
 {
     static class SqlTokens
     {
+        private const string Delim = "#^#&#";
         public const string StmntCreateTable = "CREATE TABLE";
         public const string PatternCreateTable = @"CREATE TABLE (\[?([\w]*)\]?\.)?\[?(\w+)\]?";
-        public const string PatternIdentity = @"IDENTITY\([0-9]+\,[0-9]+\)";
         public const string StmntGo = "GO";
         public const string StmntConstraint = "CONSTRAINT";
         public const string StmntPrimaryKey = "PRIMARY KEY";
@@ -33,11 +33,13 @@ namespace CreateDbUpEverytimeScripts
 
             stmnt = stmnt.Substring(stmnt.IndexOf('(')); // remove create table statement
             stmnt = RemoveConstraint(stmnt);
+            stmnt = ChangeFollowedByNumber(stmnt, " ", string.Empty);
             stmnt = stmnt.Trim(new char[] { ' ', '(', ')', ',' }); // final trimming irrelevant characters
-            stmnt = new Regex(PatternIdentity, RegexOptions.None).Replace(stmnt, StmntIdentity + "bla)"); // make identity columns parsable
+            stmnt = ChangeFollowedByNumber(stmnt, ",", Delim);
             // create columns
-            foreach (var col in stmnt.Split(','))
+            foreach (var colenc in stmnt.Split(','))
             {
+                var col = ChangeFollowedByNumber(colenc, Delim, ",");
                 var props = col.Trim().Split(' '); // assuming that there are no spaces in column names (would be so bad)
                 if (props.Length < 2)
                 {
@@ -46,13 +48,18 @@ namespace CreateDbUpEverytimeScripts
                 var column = new Column
                 {
                     Name = props[0],
-                    DataType = props[1],
+                    DataType = props[1].ToUpper(),
                 };
                 column.IsNullable = !CheckStatement(col, StmntNotNull);
                 column.IsIdentity = CheckStatement(col, StmntIdentity);
                 table.Columns.Add(column);
             }
             return table;
+        }
+
+        private static string ChangeFollowedByNumber(string original, string from, string to)
+        {
+            return new Regex($"({Regex.Escape(from)})([0-9]+)", RegexOptions.Multiline).Replace(original, $"{to}$2");
         }
 
         public static bool CheckStatement(string txt, string stmnt)

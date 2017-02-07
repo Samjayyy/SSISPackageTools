@@ -11,7 +11,7 @@ namespace CreateDbUpEverytimeScripts
         public bool IsPrimaryKey { get; set; }
         public override string ToString()
         {
-            return $"[{Name}] [{DataType}] {(IsIdentity?"IDENTITY(1,1) ":string.Empty)}{(IsNullable?"NULL":"NOT NULL")}";
+            return $"[{Name}] {DataType} {(IsIdentity?"IDENTITY(1,1) ":string.Empty)}{(IsNullable?"NULL":"NOT NULL")}";
         }
     }
 }
