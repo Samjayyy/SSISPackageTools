@@ -14,12 +14,17 @@
       </Connections>
       <Packages>
             <# 
-                const string queryAllTables = @"
+                const string queryAllTablesSrc = @"
+                    SELECT t.name 
+                    FROM sys.tables t 
+                        INNER JOIN sys.schemas s on t.schema_id = s.schema_id
+                    WHERE s.name = 'dbo'
+                ";
+                const string queryAllTablesDest = @"
                     SELECT t.name 
                     FROM sys.tables t 
                         INNER JOIN sys.schemas s on t.schema_id = s.schema_id
                     WHERE s.name = 'ins'
-                        AND t.name IN ('BezoekAfdAdm','Verstrekking')
                 ";
                 const string queryAllIsVerwijderdTables = @"
                     SELECT DISTINCT t.name
@@ -29,15 +34,27 @@
                     WHERE s.name = 'dbo'
                         AND c.name = 'IsVerwijderd'
                 ";
+                // src tables
+                DataTable srcTables = ExternalDataAccess.GetDataTable(SrcCon, queryAllTablesSrc);
+                var srcTableSet = new HashSet<string>();
+                foreach (DataRow row in srcTables.Rows)
+                {
+                    srcTableSet.Add((string)row[0]);
+                }
+                // soft del tables
                 DataTable isDelTables = ExternalDataAccess.GetDataTable(SrcCon, queryAllIsVerwijderdTables);
                 var delTableSet = new HashSet<string>();
                 foreach (DataRow row in isDelTables.Rows)
                 {
                     delTableSet.Add((string)row[0]);
                 }
-                DataTable tables = ExternalDataAccess.GetDataTable(DestCon, queryAllTables);
+                // dest tables
+                DataTable tables = ExternalDataAccess.GetDataTable(DestCon, queryAllTablesDest);
                 foreach (DataRow row in tables.Rows)
                 { 
+                    if(!srcTableSet.Contains((string)row[0])){
+                        continue; // should exist in both databases
+                    }
                     DataTable columns = ExternalDataAccess.GetDataTable(DestCon, 
                         @"SELECT c.name FROM sys.columns c WHERE object_id = OBJECT_ID('ins."+((string)row[0])+"')");
                     var prefix = ((string)row[0]).ToLower() [0];
@@ -49,7 +66,7 @@
 WHERE "+prefix+@".IsVerwijderd = 0";
                     }
                 #>
-            <Package Name="Extract.ReferenceData.<#=row[0]#>" ConstraintMode="Linear" AutoCreateConfigurationsType="None">
+            <Package Name="Extract.Data.<#=row[0]#>" ConstraintMode="Linear" AutoCreateConfigurationsType="None">
                   <Tasks>
                         <Dataflow Name="Copy Data <#=row[0]#>"> 
                               <Transformations>

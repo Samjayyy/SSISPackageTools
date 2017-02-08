@@ -18,7 +18,7 @@ namespace SSISTools.GuidReplacer
         {
             var guids = ConnectionManagerGuids();
             Console.WriteLine("-- Listing up connection managers --");
-            foreach(var g in guids)
+            foreach (var g in guids)
             {
                 Console.WriteLine(g.Key + " => " + g.Value);
             }
@@ -31,11 +31,11 @@ namespace SSISTools.GuidReplacer
             {
                 Console.WriteLine($"Replace guids for {file}");
                 var text = File.ReadAllText(file);
-                for(var indexof = 0; ; indexof += FindConnectionManagerId.Length)
+                for (var indexof = 0; ; indexof += FindConnectionManagerId.Length)
                 {
                     Console.WriteLine($"Searching for {FindConnectionManagerId}");
                     indexof = text.IndexOf(FindConnectionManagerId, indexof);
-                    if(indexof == -1)
+                    if (indexof == -1)
                     {
                         break;
                     }
@@ -51,10 +51,14 @@ namespace SSISTools.GuidReplacer
                         Console.WriteLine("CONNECTION NOT FOUND!");
                         break;
                     }
-                    if(guids[connection] != originalId)
+                    if (guids[connection] != originalId)
                     {
-                        Console.WriteLine("Replacing "+ originalId+" to "+ guids[connection]);
+                        Console.WriteLine($"Replacing {originalId} to {guids[connection]}");
                         text = text.Replace(originalId, guids[connection]);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Id {originalId} is already in place.");
                     }
                 }
                 File.WriteAllText(file, text);
@@ -71,7 +75,7 @@ namespace SSISTools.GuidReplacer
             {
                 var text = File.ReadAllText(file);
                 var id = text.IndexOf(FindGuid);
-                if(id > 0)
+                if (id > 0)
                 {
                     dict.Add(Path.GetFileNameWithoutExtension(file), text.Substring(id + FindGuid.Length, guidLength));
                 }
